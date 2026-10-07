@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: qr-barcode-suite
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: cd frontend && npm install && npm run build && cd .. && pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT

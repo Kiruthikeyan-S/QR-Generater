@@ -312,6 +312,16 @@ async def api_scan_document_codes(file: UploadFile = File(...)):
         "annotated_image": annotated_b64
     }
 
+# Mount static frontend build if present (for single-service Render / Docker / Cloud deployment)
+import os
+from fastapi.staticfiles import StaticFiles
+
+frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
+if os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
