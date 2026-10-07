@@ -1,10 +1,12 @@
 import io
+import os
 import cv2
 import base64
 import numpy as np
 from typing import Dict, Any, List, Optional
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi import FastAPI, APIRouter, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from PIL import Image
 
@@ -46,10 +48,12 @@ class GenerateQRRequest(BaseModel):
     back_color: str = Field("#FFFFFF", description="Background hex color")
 
 # ==========================================
-# API Endpoints
+# Router for API Endpoints (Mounted at both /api and /)
 # ==========================================
 
-@app.get("/health")
+router = APIRouter()
+
+@router.get("/health")
 def health_check():
     return {
         "status": "healthy",
@@ -58,7 +62,7 @@ def health_check():
         "version": "2.0.0"
     }
 
-@app.get("/formats")
+@router.get("/formats")
 def get_supported_formats():
     """Returns metadata for 17 standardized symbologies and their logistics use cases."""
     return {
@@ -185,7 +189,7 @@ def get_supported_formats():
         ]
     }
 
-@app.post("/generate-qr")
+@router.post("/generate-qr")
 def api_generate_qr(request: GenerateQRRequest):
     """
     Generates QR code for 12 standardized payload types with capacity checks,
@@ -223,7 +227,7 @@ def decode_image_upload(file_bytes: bytes) -> np.ndarray:
         raise HTTPException(status_code=400, detail=f"Invalid or unreadable image file: {str(e)}")
 
 
-@app.post("/scan-code")
+@router.post("/scan-code")
 async def api_scan_code(file: UploadFile = File(...)):
     """
     Optical Multi-Pass Scanner: detects 1D barcodes & 2D matrix codes using 6 progressive passes
@@ -260,7 +264,7 @@ async def api_scan_code(file: UploadFile = File(...)):
     }
 
 
-@app.post("/scan-document-codes")
+@router.post("/scan-document-codes")
 async def api_scan_document_codes(file: UploadFile = File(...)):
     """
     Combined Document OCR & Multi-Pass Code Scanner:
@@ -312,10 +316,11 @@ async def api_scan_document_codes(file: UploadFile = File(...)):
         "annotated_image": annotated_b64
     }
 
-# Mount static frontend build if present (for single-service Render / Docker / Cloud deployment)
-import os
-from fastapi.staticfiles import StaticFiles
+# Register router at both /api and root / so all endpoints work universally
+app.include_router(router, prefix="/api")
+app.include_router(router, prefix="")
 
+# Mount static frontend build if present (for single-service Render / Cloud deployment)
 frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
 if os.path.exists(frontend_dist):
     app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
@@ -324,4 +329,3 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
