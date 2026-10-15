@@ -79,6 +79,8 @@ flowchart TD
   - 🟠 **Orange/Azure polygons**: 1D linear barcodes with `[1D: <Format>]` value badges.
 
 ---
+<img width="1369" height="824" alt="image" src="https://github.com/user-attachments/assets/5b0f539c-a037-4ced-aa63-ba62434cd7f8" />
+
 
 ## Quick Start Guide
 
